@@ -30,19 +30,30 @@ def determine_font_size(robotarium_instance, font_height_meters):
 # SIMULATION PARAMETERS
 # =========================================================
 N = 8
-iterations = 4000
-formation_control_gain = 50
+iterations = 2000
+formation_control_gain = 10
+
+# =========================================================
+# DATA STORAGE INITIALIZATION
+# =========================================================
+# Pre-populate timestep 0 from x_init and readings after the first step.
+# Lists of (K, N) frames are stacked to (K, N, T) at save time.
+vicon_list      = []
 
 # =========================================================
 # ROBOTARIUM INITIALIZATION
 # =========================================================
 # Initializing with the updated Width/Height/Spacing from MATLAB
-initial_conditions = generate_random_poses(
-    N, 
-    width=2.5, 
-    height=1.5, 
-    spacing=0.5
-)
+# initial_conditions = generate_random_poses(
+#     N, 
+#     width=2.5, 
+#     height=1.5, 
+#     spacing=0.6
+# )
+initial_conditions = np.array([[0.02576052,  0.54828738, -0.13920942, -1.00318009, -1.06295826,  1.10838442, 1.11857774,  0.57111998],
+ [-0.59096927,  0.0222632,   0.34629195, -0.51565993,  0.20769649, -0.56014792, 0.28568192,  0.66814097],
+ [-1.39302643,  0.58631807, -2.84446966, -0.57210556,  2.03477767,  0.44730757, -2.79137411,  0.06005052]])
+print(initial_conditions)
 
 r = robotarium.Robotarium(
     number_of_robots=N, 
@@ -55,7 +66,7 @@ r = robotarium.Robotarium(
 # GRAPH TOPOLOGY
 # =========================================================
 # Adjacency Matrix
-adjacency_mat = np.zeros((8, 8), dtype=int)
+adjacency_mat = np.zeros((N,N), dtype=int)
 
 # Define undirected communication edges
 edges = [
@@ -77,8 +88,8 @@ print(L)
 # =========================================================
 # FORMATION GEOMETRY
 # =========================================================
-desired_positions = np.array([[-0.65, -0.325, 0., 0.325, 0.65, -0.35, 0.35, 0.],
-                              [-0.15, -0.3, -0.35, -0.3, -0.15, 0.25, 0.25, 0.05]])
+desired_positions = np.array([[-0.7, -0.45, 0.00, 0.45, 0.7, -0.35, 0.35, 0.00],
+                              [-0.15, -0.38, -0.5, -0.38, -0.15, 0.3, 0.3, 0.05]])
 
 # Weight matrix for desired inter-agent distances
 weights = np.zeros((N,N))
@@ -86,7 +97,7 @@ for i in range(adjacency_mat.shape[0]):
     for j in range(i,adjacency_mat.shape[1]):
         if adjacency_mat[i,j] == 1:
             weights[i,j] = np.linalg.norm(desired_positions[:,i]-desired_positions[:,j])
-
+weights = weights + weights.transpose()
 
 # =========================================================
 # CONTROLLER AND SAFETY SETUP
@@ -153,9 +164,15 @@ ax.figure.canvas.mpl_connect('resize_event', on_resize)
 # =========================================================
 # MAIN SIMULATION LOOP
 # =========================================================
-for t in range(iterations):
+
+for t in range(int(iterations)):
     x = r.get_poses()
     dxi = np.zeros((2, N))
+
+    # ---------------------------------------------------------
+    # Record sensor data
+    # ---------------------------------------------------------
+    vicon_list.append(x)
 
     # Formation control algorithm using edge tension energy
     for i in range(N):
@@ -195,6 +212,12 @@ for t in range(iterations):
     
     r.set_velocities(np.arange(N), dxu)
     r.step()
+
+# =========================================================
+# SAVE DATA
+# =========================================================
+# Stack list of (K, N) frames into (K, N, T) arrays
+np.save('smile_distance_formation.npy',      np.stack(vicon_list,      axis=2))
 
 # Final debug report
 r.debug()
