@@ -32,7 +32,7 @@ def determine_font_size(robotarium_instance, font_height_meters):
 # SIMULATION PARAMETERS
 # =========================================================
 N = 8
-iterations = 3000 
+iterations = 3500 
 formation_control_gain = 10
 waypoint_seeking_gain = 2
 
@@ -40,8 +40,11 @@ waypoint_seeking_gain = 2
 # ROBOTARIUM INITIALIZATION
 # =========================================================
 # Initializing with the same constraints as the MATLAB script
-initial_positions = generate_random_poses(N, width=2, height=1.3, spacing=0.5)
-print(initial_positions)
+#initial_positions = generate_random_poses(N, width=2, height=1.3, spacing=0.5)
+#print(initial_positions)
+initial_positions = np.array([[0.72416207, -0.83013509, -0.23069515,  0.0244063,  -0.85609484,  0.58131926, -0.89487632,  0.36658478],
+ [0.190459, 0.10231923, -0.53789058,  0.22193699,  0.60312492, -0.42308516,  -0.60768184,  0.59231836],
+ [1.47898623, -0.03715629, -2.28639774,  2.49903487,  0.12847625, -0.06118225, -0.47299734, -0.65795879]])
 r = robotarium.Robotarium(
     number_of_robots=N, 
     show_figure=True, 
@@ -193,17 +196,12 @@ for t in range(iterations):
     vicon_list.append(x)
     center_waypoint_list.append([state,waypoint[0],waypoint[1],c[0],c[1]])
 
-    # 1. Formation control for followers (Indices 1 to N-1)
+    # 1. Formation control
     for i in range(N):
         neighbors = topological_neighbors(L, i)
         for j in neighbors:
-            # Potential field: gain * (||actual||^2 - desired^2) * relative_pos
             dxi[:, i] += formation_control_gain * ((x[:2,j]-desired_positions[:,j]) - (x[:2,i]-desired_positions[:,i]))
         dxi[:,i] += waypoint_seeking_gain * (waypoint - (x[:2,i]-desired_positions[:,i]))
-
-    # # 2. Leader waypoint tracking
-    # waypoint = waypoints[:, state].reshape(2, 1)
-    # dxi[:, 0] = leader_controller(x[:2, 0].reshape(2, 1), waypoint).flatten()
 
     # Advance waypoint state if leader is close
     if np.linalg.norm(waypoint - c) < close_enough:
@@ -212,9 +210,8 @@ for t in range(iterations):
     # 3. Velocity thresholding (3/4 of max linear velocity)
     # Applied only to followers (Indices 1 to N-1)
     norms = np.linalg.norm(dxi, axis=0)
-    threshold = 0.7 * r.MAX_LINEAR_VELOCITY
+    threshold = 0.75 * r.MAX_LINEAR_VELOCITY
     to_thresh = (norms > threshold)
-    to_thresh[0] = False # Exclude leader
     
     if np.any(to_thresh):
         dxi[:, to_thresh] *= threshold / norms[to_thresh]
@@ -246,9 +243,8 @@ for t in range(iterations):
 # SAVE DATA
 # =========================================================
 # Stack list of (K, N) frames into (K, N, T) arrays
-print(center_waypoint_list)
 np.save('data/leader_follower_displacement_smile.npy', np.stack(vicon_list, axis=2))
-np.save('data/leader_follower_displacement_smile_centers.npy', center_waypoint_list)
+np.save('data/leader_follower_displacement_smile_centers.npy', np.transpose(center_waypoint_list))
 
 # Print final results
 r.debug()
