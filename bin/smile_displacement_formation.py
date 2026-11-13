@@ -91,13 +91,6 @@ print(L)
 desired_positions = np.array([[-0.7, -0.45, 0.00, 0.45, 0.7, -0.35, 0.35, 0.00],
                               [-0.15, -0.38, -0.5, -0.38, -0.15, 0.3, 0.3, 0.05]])
 
-# # Weight matrix for desired inter-agent distances
-# weights = np.zeros((N,N))
-# for i in range(adjacency_mat.shape[0]):
-#     for j in range(i,adjacency_mat.shape[1]):
-#         if adjacency_mat[i,j] == 1:
-#             weights[i,j] = np.linalg.norm(desired_positions[:,i]-desired_positions[:,j])
-# weights = weights + weights.transpose()
 
 # =========================================================
 # CONTROLLER AND SAFETY SETUP
@@ -179,7 +172,6 @@ for t in range(int(iterations)):
         neighbors = topological_neighbors(L, i)
         for j in neighbors:
             # gradient = gain * (||actual||^2 - ||desired||^2) * (pos_j - pos_i)
-            dist_sq = np.linalg.norm(x[:2, i] - x[:2, j])**2
             dxi[:, i] += formation_control_gain * ((x[:2,j]-desired_positions[:,j]) - (x[:2,i]-desired_positions[:,i]))
 
     # ---------------------------------------------------------
