@@ -242,8 +242,8 @@ for t in range(iterations):
 # SAVE DATA
 # =========================================================
 # Stack list of (K, N) frames into (K, N, T) arrays
-np.save('data/leader_follower_displacement_smile.npy', np.stack(vicon_list, axis=2))
-np.save('data/leader_follower_displacement_smile_centers.npy', np.transpose(center_waypoint_list))
+np.save('leader_follower_displacement_smile.npy', np.stack(vicon_list, axis=2))
+np.save('leader_follower_displacement_smile_centers.npy', np.transpose(center_waypoint_list))
 
 # Print final results
 r.debug()

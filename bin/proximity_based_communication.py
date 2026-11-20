@@ -80,20 +80,6 @@ def adj_matrix(x,R=radius):
 # Initialize adjacency mat
 adjacency_mat = adj_matrix(initial_conditions[:2,:])
 
-# # Define undirected communication edges
-# edges = [
-#     # Smile (robots 1-5)
-#     (1, 2),(2, 3),(3, 4),(4, 5),(1, 3),(2, 4),(3, 5),
-#     # Eyes (robots 6-7)
-#     (1, 6),(2, 6),(4, 7),(5, 7),(6, 7),
-#     # Nose (robot 8)
-#     (3, 8),(6, 8),(7, 8)]
-
-
-# for i, j in edges:
-#     adjacency_mat[i-1, j-1] = 1
-#     adjacency_mat[j-1, i-1] = 1
-
 # Laplacian for a 2D-rigid smile formation
 L = np.diag(np.sum(adjacency_mat, axis=1)) - adjacency_mat
 print(L)
